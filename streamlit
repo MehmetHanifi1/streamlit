@@ -1,0 +1,80 @@
+import streamlit as st
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Veri setini yükle
+@st.cache
+def load_data():
+    df = pd.read_csv("bilişim_veri_seti.csv")
+    return df
+
+# Grafikleri oluştur ve göster
+def main():
+    st.title("Grafik Gösterme Uygulaması")
+
+    # Veri setini yükle
+    df = load_data()
+
+    # Grafik seçim menüsü
+    grafik_secimi = st.sidebar.selectbox("Grafik Seç:", 
+                                        ["Konuma Göre En Çok Bulunan 10 Pozisyon", 
+                                        "Pozisyonlara Göre Konum Dağılımları",
+                                        "Öne Çıkan Mesleklerin Yıllara Göre Dağılımı",
+                                        "En Çok Tekrar Eden 10 Mesleğin Konuma Göre Dağılımı"])
+
+    if grafik_secimi == "Konuma Göre En Çok Bulunan 10 Pozisyon":
+        # Konuma göre en çok bulunan 10 pozisyonun grafiği
+        st.subheader("Konuma Göre En Çok Bulunan 10 Pozisyon")
+        pozisyon_sayim = df['Pozisyon'].value_counts().head(10).reset_index()
+        pozisyon_sayim.columns = ['Pozisyon', 'Sayım']
+        en_cok_10_pozisyon = pozisyon_sayim['Pozisyon'].tolist()
+        df_filtered = df[df['Pozisyon'].isin(en_cok_10_pozisyon)]
+        konum_pozisyon_sayim = df_filtered.groupby(['Konum', 'Pozisyon']).size().reset_index(name='Sayım')
+
+        plt.figure(figsize=(20, 15))
+        sns.barplot(x='Konum', y='Sayım', hue='Pozisyon', data=konum_pozisyon_sayim)
+        plt.title('Konuma Göre En Çok Bulunan 10 Pozisyon')
+        plt.xlabel('Konum')
+        plt.ylabel('Sayım')
+        plt.legend(title='Pozisyon', loc='upper right')
+        st.pyplot()
+
+    elif grafik_secimi == "Pozisyonlara Göre Konum Dağılımları":
+        # Pozisyonlara göre konum dağılımlarının grafiği
+        st.subheader("Pozisyonlara Göre Konum Dağılımları")
+        pozisyon_sayim = df['Pozisyon'].value_counts().head(10).reset_index()
+        pozisyon_sayim.columns = ['Pozisyon', 'Sayım']
+        en_cok_10_pozisyon = pozisyon_sayim['Pozisyon'].tolist()
+        df_filtered = df[df['Pozisyon'].isin(en_cok_10_pozisyon)]
+
+        g = sns.FacetGrid(df_filtered, col='Pozisyon', col_wrap=3, height=4)
+        g.map(sns.histplot, 'Konum')
+
+        for ax in g.axes.flatten():
+            for label in ax.get_xticklabels():
+                label.set_rotation(90)
+                label.set_ha('right')
+
+        g.add_legend()
+        plt.subplots_adjust(top=1)
+        g.fig.suptitle('Pozisyonlara Göre Konum Dağılımları')
+        st.pyplot()
+
+    elif grafik_secimi == "Öne Çıkan Mesleklerin Yıllara Göre Dağılımı":
+        # Öne çıkan mesleklerin yıllara göre dağılımının grafiği
+        st.subheader("Öne Çıkan Mesleklerin Yıllara Göre Dağılımı")
+        meslekler = df['Pozisyon'].value_counts().head(10).index.tolist()
+
+        plt.figure(figsize=(14, 8))
+        for meslek in meslekler:
+            meslek_df = df[df['Pozisyon'] == meslek]
+            yil_sayim = meslek_df['Tarih'].value_counts().sort_index().reset_index()
+            yil_sayim.columns = ['Tarih', 'Sayım']
+            sns.lineplot(x='Tarih', y='Sayım', data=yil_sayim, label=meslek, marker='o')
+
+        plt.title('Öne Çıkan Mesleklerin Yıllara Göre Dağılımı')
+        plt.xlabel('Yıl')
+        plt.ylabel('Sayım')
+        plt.xticks(rotation=45)
+        plt.legend
